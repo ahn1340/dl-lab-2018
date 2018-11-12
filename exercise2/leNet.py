@@ -75,25 +75,29 @@ class leNet(object):
         # Build computational graph
         y_pred = self.inference(self.X)
         loss = self.loss(y_pred)
-        # define Optimizer
+        # define Optimizer operation. note: this returns None, since this is an op, not a tensor.
         optimizer = tf.train.GradientDescentOptimizer(self.learning_rate).minimize(loss)
-        # Initialize variables
-        glob_vars = tf.initializers.global_variables()
+        # define operation which initializes variables
+        init = tf.global_variables_initializer()
         # define operation for computing accuracy
         correct_prediction = tf.equal(tf.argmax(y_pred, 1), tf.argmax(self.y, 1))
         accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32)) # operation for cmoputing accuracy
+        print("program works until here")
 
         # Lists to store learning curve
         train_losses = []
         train_accuracies = []
         valid_accuracies = []
 
+
         # Start session
         with tf.Session() as sess:
-            sess.run(glob_vars)
+            sess.run(init)
             for e in range(self.num_epochs):
                 train_loss = 0
+                print("epoch ", e)
                 for b in range(X_train.shape[0] // self.batch_size):
+                    print("batch: ", b)
                     # extract batch
                     X_train_batch = X_train[self.batch_size * b : self.batch_size * (b + 1), :, :, :]
                     y_train_batch = y_train[self.batch_size * b : self.batch_size * (b + 1), :]
@@ -160,7 +164,7 @@ X_train, y_train, X_valid, y_valid, X_test, y_test = mnist()
 
 # Testing
 learning_rate=0.1
-num_epochs=4
+num_epochs=2
 num_filters=16
 batch_size=64
 filter_size=3
@@ -168,4 +172,4 @@ max_pool_size=2
 
 
 model = leNet(learning_rate,num_epochs,num_filters,batch_size,filter_size,max_pool_size)
-model.train(X_train, y_train, X_valid, y_valid)
+model.train(X_test, y_test, X_valid, y_valid)
