@@ -12,7 +12,7 @@ class leNet(object):
                  batch_size,
                  filter_size,
                  max_pool_size,
-                 model_path="./tmp/model.ckpt",
+                 model_path="/tmp/model.ckpt",
                  ):
         self.learning_rate = learning_rate
         self.num_epochs = num_epochs
@@ -52,13 +52,12 @@ class leNet(object):
         max_pool2 = tf.nn.max_pool(activation2, ksize, stride_size, padding)
 
         # Third layer (fully connected)
-        flattened = tf.contrib.layers.flatten(max_pool2) # Flatten the array so it has shape (N, W*H*D, 1), right?
+        flattened = tf.contrib.layers.flatten(max_pool2) # Flatten the array first.
         activation3 = tf.contrib.layers.fully_connected(flattened, num_outputs=128)
 
         # Fourth layer
         logits = tf.contrib.layers.fully_connected(activation3, num_outputs=10, activation_fn=None)
         return logits
-
 
     def loss(self, logits):
         """
@@ -68,68 +67,88 @@ class leNet(object):
         loss = tf.reduce_mean(cross_entropy) # Take the average of the loss per samples
         return loss
 
-
     def train(self, X_train, y_train, X_valid, y_valid):
         # Initialize parameters and placeholders
         self.initialize(X_train.shape, y_train.shape)
+
         # Build computational graph
-        y_pred = self.inference(self.X)
-        loss = self.loss(y_pred)
+        logits = self.inference(self.X)
+        loss = self.loss(logits)
+        #tf.add_to_collection('prediction', tf.argmax(logits, 1)) # need this for computing test accuracy later.
+
         # define Optimizer operation. note: this returns None, since this is an op, not a tensor.
         optimizer = tf.train.GradientDescentOptimizer(self.learning_rate).minimize(loss)
-        # define operation which initializes variables
-        init = tf.global_variables_initializer()
+
         # define operation for computing accuracy
-        correct_prediction = tf.equal(tf.argmax(y_pred, 1), tf.argmax(self.y, 1))
-        accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32)) # operation for cmoputing accuracy
-        print("program works until here")
+        correct_prediction = tf.equal(tf.argmax(logits, 1), tf.argmax(self.y, 1))
+        accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32), name='accuracy')
+
+        # initialize all variables
+        init = tf.global_variables_initializer()
 
         # Lists to store learning curve
         train_losses = []
         train_accuracies = []
         valid_accuracies = []
 
+        # Create saver object.
+        saver = tf.train.Saver()
 
         # Start session
         with tf.Session() as sess:
             sess.run(init)
             for e in range(self.num_epochs):
                 train_loss = 0
-                print("epoch ", e)
-                for b in range(X_train.shape[0] // self.batch_size):
-                    print("batch: ", b)
+                train_accuracy = 0
+                valid_accuracy = 0
+                num_batches = X_train.shape[0] // self.batch_size # total number of training batches
+                num_valid_batches = X_valid.shape[0] // self.batch_size # total number of validation batches
+                # update setp
+                for b in range(num_batches):
                     # extract batch
-                    X_train_batch = X_train[self.batch_size * b : self.batch_size * (b + 1), :, :, :]
-                    y_train_batch = y_train[self.batch_size * b : self.batch_size * (b + 1), :]
+                    X_train_batch = X_train[self.batch_size * b : self.batch_size * (b + 1)]
+                    y_train_batch = y_train[self.batch_size * b : self.batch_size * (b + 1)]
                     # optimize
                     _, batch_loss = sess.run([optimizer, loss], feed_dict={self.X:X_train_batch, self.y:y_train_batch})
-                    train_loss += batch_loss / self.batch_size # Accumulate train loss for current epoch.
-                train_losses.append(train_loss)
 
-                # compute train and validation accuracies and store them
-                train_accuracy = accuracy.eval(feed_dict={self.X:X_train, self.y:y_train})
-                valid_accuracy = accuracy.eval(feed_dict={self.X:X_valid, self.y:y_valid})
-                train_accuracies.append(train_accuracy)
-                valid_accuracies.append(valid_accuracy)
+                # train loss/accuracy computation step
+                for b in range(num_batches):
+                    # Compute loss and accuracy in a batch-by-batch manner to prevent memory overflow.
+                    X_train_batch = X_train[self.batch_size * b : self.batch_size * (b + 1)]
+                    y_train_batch = y_train[self.batch_size * b : self.batch_size * (b + 1)]
+                    train_loss += loss.eval(feed_dict={self.X:X_train_batch, self.y:y_train_batch}) / num_batches
+                    train_accuracy += accuracy.eval(feed_dict={self.X:X_train_batch, self.y:y_train_batch}) / num_batches
+
+                # validation accuracy computation step
+                for b in range(num_valid_batches):
+                    X_valid_batch = X_valid[self.batch_size * b : self.batch_size * (b + 1)]
+                    y_valid_batch = y_valid[self.batch_size * b : self.batch_size * (b + 1)]
+                    valid_accuracy += accuracy.eval(feed_dict={self.X:X_valid_batch, self.y:y_valid_batch}) / num_valid_batches
+
+                train_losses.append(float(train_loss))
+                train_accuracies.append(float(train_accuracy))
+                valid_accuracies.append(float(valid_accuracy))
 
                 # print statistics
                 print("Epoch %d: train_accuracy: %.4f, valid_accuracy: %.4f" % (e+1, train_accuracy, valid_accuracy))
+                print("         training loss:", train_loss)
 
-            # Save model after done training.
-            #saver = tf.train.Saver()
-            #saver.save(sess, self.model_path)
+            # Save model after training.
+            save_path = saver.save(sess, self.model_path)
+            print("model saved in path:", save_path)
 
         return train_losses, train_accuracies, valid_accuracies
 
-    def eval(self, X_test, y_test):
-        """
-        Simple method for evaluating the trained model on the test data.
-        """
-        #y_pred = self.inference(self.X)
-        #correct_prediction = tf.equal(tf.argmax(y_pred, 1), tf.argmax(self.y, 1))
-        #accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32)) # operation for cmoputing accuracy
-        #test_accuracy = accuracy.eval(feed_dict={self.X:X_test, self.y:y_test})
-        pass
+    def test_eval(self, X_test, y_test):
+        """method which evaluates the model on the test dataset."""
+        saver = tf.train.import_meta_graph(self.model_path + '.meta')
+        with tf.Session() as sess:
+            saver.restore(sess, tf.train.latest_checkpoint('/tmp/'))
+            graph = tf.get_default_graph()
+            accuracy = graph.get_tensor_by_name("accuracy:0")
+            prediction = sess.run([accuracy], feed_dict={self.X:X_test, self.y:y_test})
+            print("test accuracy: %.4f" % prediction[0])
+            return float(prediction[0]) # change to float, because numpy.float32 is not JSON serializable.
 
 
     def plot(self, train_losses, train_accuracies, valid_accuracies):
@@ -155,21 +174,3 @@ class leNet(object):
         plt.legend(loc='best')
         plt.grid(True)
         plt.show()
-
-
-# Create dataset for testing.
-from cnn_mnist import mnist
-X_train, y_train, X_valid, y_valid, X_test, y_test = mnist()
-
-
-# Testing
-learning_rate=0.1
-num_epochs=2
-num_filters=16
-batch_size=64
-filter_size=3
-max_pool_size=2
-
-
-model = leNet(learning_rate,num_epochs,num_filters,batch_size,filter_size,max_pool_size)
-model.train(X_test, y_test, X_valid, y_valid)

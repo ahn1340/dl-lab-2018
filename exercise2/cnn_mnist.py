@@ -8,7 +8,7 @@ import pickle
 
 import numpy as np
 import tensorflow as tf
-#from leNet import *
+from leNet import *
 
 
 def one_hot(labels):
@@ -67,14 +67,13 @@ def train_and_validate(x_train, y_train, x_valid, y_valid, num_epochs, lr, num_f
     max_pool_size = 2
     model = leNet(lr, num_epochs, num_filters, batch_size, filter_size, max_pool_size)
     train_losses, train_accuracies, valid_accuracies = model.train(x_train, y_train, x_valid, y_valid)
-
     return valid_accuracies, model  # TODO: Return the validation error after each epoch (i.e learning curve) and your model
 
 
 def test(x_test, y_test, model):
     # TODO: test your network here by evaluating it on the test data
-    #return test_error
-    pass
+    test_accuracy = model.test_eval(x_test, y_test)
+    return test_accuracy
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -83,7 +82,7 @@ if __name__ == "__main__":
     parser.add_argument("--input_path", default="./", type=str, nargs="?",
                         help="Path where the data is located. If the data is not available it will be downloaded first")
     parser.add_argument("--learning_rate", default=1e-3, type=float, nargs="?", help="Learning rate for SGD")
-    parser.add_argument("--num_filters", default=32, type=int, nargs="?",
+    parser.add_argument("--num_filters", default=16, type=int, nargs="?",
                         help="The number of filters for each convolution layer")
     parser.add_argument("--batch_size", default=128, type=int, nargs="?", help="Batch size for SGD")
     parser.add_argument("--epochs", default=12, type=int, nargs="?",
@@ -106,6 +105,7 @@ if __name__ == "__main__":
 
     learning_curve, model = train_and_validate(x_train, y_train, x_valid, y_valid, epochs, lr, num_filters, batch_size, filter_size)
 
+    # This computes accuracy, not error!
     test_error = test(x_test, y_test, model)
 
     # save results in a dictionary and write them into a .json file
@@ -115,7 +115,7 @@ if __name__ == "__main__":
     results["batch_size"] = batch_size
     results["filter_size"] = filter_size
     results["learning_curve"] = learning_curve
-    results["test_error"] = test_error
+    results["test_error"] = test_error # this is accuracy, not error
 
     path = os.path.join(args.output_path, "results")
     os.makedirs(path, exist_ok=True)
