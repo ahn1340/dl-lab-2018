@@ -199,7 +199,7 @@ class FCN_SS(object):
 		self.collect_summaries()
 
 		# Merge all summary inforation.
-  		summary = tf.summary.merge_all()
+		summary = tf.summary.merge_all()
 
 		print("=================Collection Variables ok!!!!==========================")
 		
@@ -422,4 +422,3 @@ class FCN_SS(object):
 		
 		# return test_data, test_label_batch	
 		return test_data, test_label
-	   
