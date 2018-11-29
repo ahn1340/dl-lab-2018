@@ -147,11 +147,11 @@ def FCN_Seg(self, is_training=True):
         # TODO (3.2) - Repeat TODO(3.1) now producing 160 output feature maps and fusing the upsampled features 
         # with the corresponding skip connection (DB3_skip_connection) through concatenation.
         #x = slim.conv2d_transpose(x, DB3_skip_connection.shape[3], kernel_size=3, stride=2, activation_fn=tf.nn.elu)
-        x = TransitionUp_elu(x, DB4_skip_connection.shape[3], 2, 'trans3.1') # Convolution + elu
+        x = TransitionUp_elu(x, DB4_skip_connection.shape[3], 2, 'trans3.2') # Convolution + elu
         x = crop(x, DB3_skip_connection)
         x = Concat_layers(x, DB3_skip_connection)
         #x = tc.layers.conv2d(x, 160, kernel_size=3, stride=1)
-        x = Convolution(x, 160, 3, 'conv3.1') # Convolve after concatenation
+        x = Convolution(x, 160, 3, 'conv3.2') # Convolve after concatenation
 
 
         # TODO (3.3) - incorporate a upsample function which takes the features from TODO (3.2)  
