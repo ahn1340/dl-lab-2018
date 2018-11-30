@@ -72,6 +72,7 @@ def main():
 
 		#Create text file
 		name = FLAGS.model_path + '/' + FLAGS.IoU_filename
+		print("name: ", name)
 		f= open(name,"w+")
 
 		number_of_iter = int((FLAGS.higher_iter - FLAGS.lower_iter) / 1000) + 1
