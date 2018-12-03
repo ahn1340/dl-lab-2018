@@ -147,7 +147,7 @@ def FCN_Seg(self, is_training=True):
         # TODO (3.2) - Repeat TODO(3.1) now producing 160 output feature maps and fusing the upsampled features 
         # with the corresponding skip connection (DB3_skip_connection) through concatenation.
         #x = slim.conv2d_transpose(x, DB3_skip_connection.shape[3], kernel_size=3, stride=2, activation_fn=tf.nn.elu)
-        x = TransitionUp_elu(x, DB4_skip_connection.shape[3], 2, 'trans3.2') # Convolution + elu
+        x = TransitionUp_elu(x, DB3_skip_connection.shape[3], 2, 'trans3.2') # Convolution + elu
         x = crop(x, DB3_skip_connection)
         x = Concat_layers(x, DB3_skip_connection)
         #x = tc.layers.conv2d(x, 160, kernel_size=3, stride=1)
@@ -161,7 +161,7 @@ def FCN_Seg(self, is_training=True):
         # output feature name should match the next convolution layer, for instance
         # current_up4
         #current_up4 = slim.conv2d_transpose(x, 120, kernel_size=3, stride=4, activation_fn=tf.nn.elu)
-        current_up4 = TransitionUp_elu(x, DB4_skip_connection.shape[3], 4, 'trans3.3') # Convolution + elu
+        current_up4 = TransitionUp_elu(x, 120, 4, 'trans3.3') # Convolution + elu
 
         End_maps_decoder1 = slim.conv2d(current_up4, self.N_classes, [1, 1], scope='Final_decoder') #(batchsize, width, height, N_classes)
         

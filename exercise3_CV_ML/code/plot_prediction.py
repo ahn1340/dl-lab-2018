@@ -36,28 +36,22 @@ FLAGS = flags.FLAGS
 # Loading Class
 FCN = FCN_SS()
 FCN.setup_inference(FLAGS.version_net, FLAGS.img_height, FLAGS.img_width, FLAGS.batch_size, FLAGS.Test, FLAGS.numberClasses, FLAGS.dataset, FLAGS.configuration)
+
 saver = tf.train.Saver([var for var in tf.trainable_variables()])
+
 variables_to_restore = tf.trainable_variables()
 #variables_to_restore = slim.get_variables_to_restore()
-#for v in variables_to_restore:
-#print(v)
+for v in variables_to_restore:
+    print(v)
 
 imgs, label = FCN.loadTest_set(FLAGS)
-#print("Test Set DONE!")
-#print(imgs.shape)
-#print(label.shape)
-#print(np.max(imgs[0]))
-#print(np.min(imgs[0]))
-#print(imgs[0])
+num_pics = 2 # number of pictures to show
+idx = 37 # Where to start plotting
 
-num_pics = 3 # number of pictures to show
-idx = 50 # Where to start plotting
-
-# Show ground truth and prediction
 fig = plt.figure(figsize=(8, 6))
 # prepare trained model
 with tf.Session() as sess:
-    model_path = './checkpoints/model-2000'
+    model_path = './checkpoints/config{}/model-25000'.format(FLAGS.configuration)
     print("model to be restored: ", model_path)
     saver.restore(sess, model_path)
     for i in range(num_pics):
@@ -71,6 +65,8 @@ with tf.Session() as sess:
         fig.add_subplot(num_pics, 2, 2*i + 2)
         plt.imshow(truth) # ground truth
         plt.title("Ground truth")
+
+    plt.savefig("Config4_visualization")
     plt.show()
 
 
